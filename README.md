@@ -26,7 +26,7 @@ Formulario estatico (Vercel) que registra produccion en el Sheet existente. El l
 ## Frontend (Vercel estatico)
 1. Reemplaza en `main.js`:
    - `GAS_ENDPOINT` por la URL de despliegue del Apps Script (termina en `/exec`).
-   - `MENU_LINK` por la URL del menu principal.
+   - `MENU_LINK` por la URL del menu principal (ej: `https://menu-almacen.vercel.app/`).
 2. Despliega los archivos estaticos con Vercel, por ejemplo:
    ```bash
    npm i -g vercel
