@@ -1,7 +1,7 @@
 // Web App para Produccion Diaria
 // - GET ?mode=ingredientes -> lista de codigos/nombres desde COSTO MATERIA PRIMA
-// - POST body { items: [{ fecha: "YYYY-MM-DD", codigo, ingrediente, cantidad }] } -> agrega filas en PRODUCCION DIARIA
-// Columnas destino: A=FECHA, B=CODIGO, C=INGREDIENTE, D=UND PRINCIPAL (se deja en blanco), E=CANTIDAD PRODUCIDA
+// - POST body { responsable: "...", items: [{ fecha: "YYYY-MM-DD", codigo, ingrediente, cantidad }] } -> agrega filas en PRODUCCION DIARIA
+// Columnas destino: A=FECHA, B=CODIGO, C=INGREDIENTE, D=UND PRINCIPAL (se deja en blanco), E=CANTIDAD PRODUCIDA, F=RESPONSABLE
 
 const SPREADSHEET_ID = "1MQlP9wx199xW-gIYwf4FcjdANG9TLEkSjORiNmxJH5s";
 const SOURCE_SHEET = "COSTO MATERIA PRIMA";
@@ -24,6 +24,11 @@ function doPost(e) {
   try {
     const body = JSON.parse(e.postData && e.postData.contents ? e.postData.contents : "{}");
     const items = Array.isArray(body.items) ? body.items : [];
+    const responsable = (body.responsable || "").toString().trim();
+
+    if (!responsable) {
+      return json({ status: "error", message: "Responsable requerido" }, 400);
+    }
 
     if (!items.length) {
       return json({ status: "error", message: "Sin items" }, 400);
@@ -53,10 +58,10 @@ function doPost(e) {
       }
 
       // Dejar columna D (UND PRINCIPAL) intacta: enviamos vacio para no romper formulas
-      return [fecha, codigo, ingrediente, "", cantidad];
+      return [fecha, codigo, ingrediente, "", cantidad, responsable];
     });
 
-    target.getRange(target.getLastRow() + 1, 1, rows.length, 5).setValues(rows);
+    target.getRange(target.getLastRow() + 1, 1, rows.length, 6).setValues(rows);
 
     return json({ status: "ok", message: `Se registraron ${rows.length} fila(s).` });
   } catch (err) {

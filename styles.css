@@ -84,6 +84,21 @@ body {
   flex-wrap: wrap;
 }
 
+.hero__field {
+  display: grid;
+  gap: 6px;
+  min-width: 260px;
+  flex: 1 1 320px;
+}
+
+.hero__label {
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: rgba(248, 250, 252, 0.88);
+}
+
 .panel {
   background: var(--panel);
   border: 1px solid var(--panel-border);
@@ -314,6 +329,11 @@ body {
   .right-actions,
   .hero__actions {
     flex-direction: column;
+    width: 100%;
+  }
+
+  .hero__field {
+    min-width: unset;
     width: 100%;
   }
 

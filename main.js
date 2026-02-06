@@ -1,4 +1,4 @@
-const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbzUA4zYSZXmobasY7L2XY-_rwQoMElA7My82FW6aUEO5Jjvhto0xJL4rwvIsxXlfZZf/exec"; // despliegue Apps Script produccion diaria
+const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbxCBwFqNXtjv9DJ-cqMjsDDCQMEkEzrzSzwNRWbweQV1VVE-Y0gYl2lpvMLJQ7dE4jD/exec"; // despliegue Apps Script produccion diaria
 const MENU_LINK = "https://menu-almacen.vercel.app/"; // URL del menú principal
 
 const form = document.getElementById("production-form");
@@ -7,6 +7,7 @@ const rowsContainer = document.getElementById("rows");
 const addRowBtn = document.getElementById("add-row");
 const menuLinkEl = document.getElementById("menu-link");
 const datalistEl = document.getElementById("ingredientes-list");
+const responsableEl = document.getElementById("responsable");
 
 menuLinkEl.href = MENU_LINK;
 
@@ -139,6 +140,13 @@ const getOptionsFromSheet = async () => {
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
+  const responsable = (responsableEl && responsableEl.value ? responsableEl.value : "").trim();
+  if (!responsable) {
+    setStatus("El campo Responsable es obligatorio.", "error");
+    if (responsableEl) responsableEl.focus();
+    return;
+  }
+
   const payload = Array.from(rowsContainer.children).map((row) => {
     const inputs = row.querySelectorAll("input");
     const [fechaEl, ingredienteEl, cantidadEl] = inputs;
@@ -171,6 +179,7 @@ form.addEventListener("submit", async (event) => {
         "Content-Type": "text/plain;charset=utf-8",
       },
       body: JSON.stringify({
+        responsable,
         items: payload.map(({ fecha, codigo, ingrediente, cantidad }) => ({
           fecha,
           codigo,
