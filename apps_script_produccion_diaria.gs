@@ -4,8 +4,8 @@
 // Columnas destino:
 // A=FECHA, B=CODIGO, C=INGREDIENTE
 // D=UND PRINCIPAL (no se toca)
-// E=RESPONSABLE
-// H=CANTIDAD PRODUCIDA (columna 8)
+// E=CANTIDAD PRODUCIDA
+// F=RESPONSABLE
 
 const SPREADSHEET_ID = "1MQlP9wx199xW-gIYwf4FcjdANG9TLEkSjORiNmxJH5s";
 const SOURCE_SHEET = "COSTO MATERIA PRIMA";
@@ -71,11 +71,11 @@ function doPost(e) {
       .getRange(startRow, 1, rows.length, 3)
       .setValues(rows.map((r) => [r.fecha, r.codigo, r.ingrediente]));
 
-    // E: RESPONSABLE
-    target.getRange(startRow, 5, rows.length, 1).setValues(rows.map(() => [responsable]));
+    // E: CANTIDAD PRODUCIDA
+    target.getRange(startRow, 5, rows.length, 1).setValues(rows.map((r) => [r.cantidad]));
 
-    // H (col 8): CANTIDAD PRODUCIDA
-    target.getRange(startRow, 8, rows.length, 1).setValues(rows.map((r) => [r.cantidad]));
+    // F: RESPONSABLE
+    target.getRange(startRow, 6, rows.length, 1).setValues(rows.map(() => [responsable]));
 
     return json({ status: "ok", message: `Se registraron ${rows.length} fila(s).` });
   } catch (err) {
