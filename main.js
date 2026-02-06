@@ -1,4 +1,4 @@
-const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbxCBwFqNXtjv9DJ-cqMjsDDCQMEkEzrzSzwNRWbweQV1VVE-Y0gYl2lpvMLJQ7dE4jD/exec"; // despliegue Apps Script produccion diaria
+const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbwUiuwbezHnud6phtrZO637fwDbb7f03DNT6vQD-Tx-2_Xz2kSyp8wS1zUaZMGKHHGp/exec"; // despliegue Apps Script produccion diaria
 const MENU_LINK = "https://menu-almacen.vercel.app/"; // URL del menú principal
 
 const form = document.getElementById("production-form");
