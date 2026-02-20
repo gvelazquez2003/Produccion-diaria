@@ -63,6 +63,33 @@
     </section>
   </main>
 
+  <div id="confirm-overlay" class="modal" hidden>
+    <section class="modal__card" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+      <div class="modal__header">
+        <h3 id="confirm-title">Confirmar envío</h3>
+        <button id="confirm-close" class="modal__close" type="button" aria-label="Cerrar">✕</button>
+      </div>
+      <p class="modal__text modal__text--center">Verifica los datos antes de enviar.</p>
+      <div class="confirm-table" role="table" aria-label="Resumen de envío">
+        <div class="confirm-table__head" role="rowgroup">
+          <span>Código</span>
+          <span>Producto</span>
+          <span>Unidad</span>
+          <span>Cantidad entregada</span>
+        </div>
+        <div id="confirm-summary" class="confirm-table__body" role="rowgroup"></div>
+      </div>
+      <label class="confirm-check confirm-check--box">
+        <input id="confirm-check" type="checkbox">
+        <span>Yo, <strong id="confirm-responsable">RESPONSABLE</strong>, estoy de acuerdo con estos productos y cantidades.</span>
+      </label>
+      <div class="actions actions--end modal__actions">
+        <button id="confirm-cancel" type="button" class="btn ghost">Volver a editar</button>
+        <button id="confirm-submit" type="button" class="btn primary" disabled>Confirmar y enviar</button>
+      </div>
+    </section>
+  </div>
+
   <script src="main.js"></script>
 </body>
 </html>

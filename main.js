@@ -8,6 +8,13 @@ const addRowBtn = document.getElementById("add-row");
 const menuLinkEl = document.getElementById("menu-link");
 const datalistEl = document.getElementById("ingredientes-list");
 const responsableEl = document.getElementById("responsable");
+const confirmOverlayEl = document.getElementById("confirm-overlay");
+const confirmSummaryEl = document.getElementById("confirm-summary");
+const confirmCheckEl = document.getElementById("confirm-check");
+const confirmSubmitBtn = document.getElementById("confirm-submit");
+const confirmCancelBtn = document.getElementById("confirm-cancel");
+const confirmCloseBtn = document.getElementById("confirm-close");
+const confirmResponsableEl = document.getElementById("confirm-responsable");
 
 menuLinkEl.href = MENU_LINK;
 
@@ -19,6 +26,8 @@ const setStatus = (message, type) => {
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
 let cachedOptions = [];
+let pendingSubmission = null;
+let isSubmitting = false;
 
 const findMatch = (value) => {
   const val = (value || "").trim().toLowerCase();
@@ -111,12 +120,174 @@ const ensureRows = (count = 1) => {
   }
 };
 
+const isValidDateInput = (dateText) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateText)) return false;
+  const [year, month, day] = dateText.split("-").map(Number);
+  const d = new Date(`${dateText}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return false;
+  return d.getUTCFullYear() === year && d.getUTCMonth() + 1 === month && d.getUTCDate() === day;
+};
+
+const closeConfirmation = () => {
+  if (!confirmOverlayEl) return;
+  confirmOverlayEl.hidden = true;
+  document.body.style.overflow = "";
+  if (confirmCheckEl) confirmCheckEl.checked = false;
+  if (confirmSubmitBtn) confirmSubmitBtn.disabled = true;
+  if (confirmCancelBtn) confirmCancelBtn.disabled = false;
+  pendingSubmission = null;
+};
+
+const openConfirmation = ({ responsable, items }) => {
+  if (!confirmOverlayEl || !confirmSummaryEl || !confirmCheckEl || !confirmSubmitBtn) {
+    return;
+  }
+
+  confirmSummaryEl.innerHTML = "";
+  if (confirmResponsableEl) {
+    confirmResponsableEl.textContent = responsable.toUpperCase();
+  }
+
+  items.forEach((item) => {
+    const row = document.createElement("div");
+    row.className = "confirm-table__row";
+
+    const codeCell = document.createElement("span");
+    codeCell.textContent = item.codigo;
+    const productCell = document.createElement("span");
+    productCell.textContent = item.ingrediente;
+    const unitCell = document.createElement("span");
+    unitCell.textContent = item.unidad || "-";
+    const quantityCell = document.createElement("span");
+    quantityCell.textContent = String(item.cantidad);
+
+    row.append(codeCell, productCell, unitCell, quantityCell);
+    confirmSummaryEl.appendChild(row);
+  });
+
+  const total = items.reduce((sum, item) => sum + item.cantidad, 0);
+  const totalRow = document.createElement("div");
+  totalRow.className = "confirm-table__row confirm-table__total";
+  totalRow.innerHTML = `<span class="confirm-table__total-label">Total de unidades</span><span>${total}</span>`;
+  confirmSummaryEl.appendChild(totalRow);
+
+  pendingSubmission = { responsable, items };
+  confirmCheckEl.checked = false;
+  confirmSubmitBtn.disabled = true;
+  confirmOverlayEl.hidden = false;
+  document.body.style.overflow = "hidden";
+};
+
+const validateFormData = () => {
+  const responsable = (responsableEl && responsableEl.value ? responsableEl.value : "").trim();
+  if (!responsable) {
+    return {
+      ok: false,
+      message: "El campo Responsable es obligatorio.",
+      focusEl: responsableEl,
+      data: null,
+    };
+  }
+
+  const rows = Array.from(rowsContainer.children);
+  if (!rows.length) {
+    return {
+      ok: false,
+      message: "Debes ingresar al menos una fila de producción.",
+      focusEl: null,
+      data: null,
+    };
+  }
+
+  const items = [];
+  for (let index = 0; index < rows.length; index += 1) {
+    const row = rows[index];
+    const fechaEl = row.querySelector('input[type="date"]');
+    const ingredienteEl = row.querySelector('input[name="ingrediente"]');
+    const cantidadEl = row.querySelector('input[name="cantidad"]');
+
+    const fecha = (fechaEl && fechaEl.value ? fechaEl.value : "").trim();
+    const ingredienteText = (ingredienteEl && ingredienteEl.value ? ingredienteEl.value : "").trim();
+    const cantidadText = (cantidadEl && cantidadEl.value ? cantidadEl.value : "").trim();
+    const cantidad = Number(cantidadText);
+    const match = findMatch(ingredienteText);
+
+    if (!isValidDateInput(fecha)) {
+      return {
+        ok: false,
+        message: `Fila ${index + 1}: la fecha no es válida.`,
+        focusEl: fechaEl,
+        data: null,
+      };
+    }
+
+    if (!match) {
+      return {
+        ok: false,
+        message: `Fila ${index + 1}: el ingrediente/código debe existir en la lista.`,
+        focusEl: ingredienteEl,
+        data: null,
+      };
+    }
+
+    if (cantidadText === "" || Number.isNaN(cantidad) || cantidad < 0) {
+      return {
+        ok: false,
+        message: `Fila ${index + 1}: la cantidad debe ser numérica y mayor o igual a 0.`,
+        focusEl: cantidadEl,
+        data: null,
+      };
+    }
+
+    items.push({
+      fecha,
+      codigo: match.code,
+      ingrediente: match.name,
+      cantidad,
+    });
+  }
+
+  return {
+    ok: true,
+    message: "Validación previa completada. Revisa y confirma el envío.",
+    focusEl: null,
+    data: {
+      responsable,
+      items,
+    },
+  };
+};
+
+const submitData = async ({ responsable, items }) => {
+  setStatus("Enviando...", "pending");
+
+  const response = await fetch(GAS_ENDPOINT, {
+    method: "POST",
+    headers: {
+      "Content-Type": "text/plain;charset=utf-8",
+    },
+    body: JSON.stringify({ responsable, items }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  const data = await response.json().catch(() => ({}));
+  if (data.status && data.status !== "ok") {
+    throw new Error(data.message || "No se pudo guardar");
+  }
+
+  return data;
+};
+
 addRowBtn.addEventListener("click", () => {
   rowsContainer.appendChild(createRow());
 });
 
 form.addEventListener("reset", () => {
   setTimeout(() => {
+    closeConfirmation();
     rowsContainer.innerHTML = "";
     ensureRows(1);
     setStatus("", "");
@@ -139,72 +310,80 @@ const getOptionsFromSheet = async () => {
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (isSubmitting) return;
 
-  const responsable = (responsableEl && responsableEl.value ? responsableEl.value : "").trim();
-  if (!responsable) {
-    setStatus("El campo Responsable es obligatorio.", "error");
-    if (responsableEl) responsableEl.focus();
+  const validation = validateFormData();
+  if (!validation.ok) {
+    setStatus(validation.message, "error");
+    if (validation.focusEl) validation.focusEl.focus();
     return;
   }
 
-  const payload = Array.from(rowsContainer.children).map((row) => {
-    const inputs = row.querySelectorAll("input");
-    const [fechaEl, ingredienteEl, cantidadEl] = inputs;
-    const match = findMatch(ingredienteEl.value);
+  setStatus(validation.message, "pending");
+  openConfirmation(validation.data);
+});
 
-    return {
-      fecha: (fechaEl.value || "").trim(),
-      codigo: match ? match.code : "",
-      ingrediente: match ? match.name : "",
-      cantidad: Number((cantidadEl.value || "").trim()),
-      matched: Boolean(match),
-    };
+if (confirmCheckEl && confirmSubmitBtn) {
+  confirmCheckEl.addEventListener("change", () => {
+    confirmSubmitBtn.disabled = !confirmCheckEl.checked || isSubmitting;
   });
+}
 
-  const hasInvalid = payload.some(
-    (item) => !item.fecha || !item.matched || Number.isNaN(item.cantidad) || item.cantidad < 0
-  );
+if (confirmCancelBtn) {
+  confirmCancelBtn.addEventListener("click", () => {
+    closeConfirmation();
+    setStatus("Envío cancelado. Puedes ajustar y volver a enviar.", "pending");
+  });
+}
 
-  if (!payload.length || hasInvalid) {
-    setStatus("Completa fecha, ingrediente de la lista y cantidad (>= 0) en cada fila.", "error");
-    return;
-  }
+if (confirmCloseBtn) {
+  confirmCloseBtn.addEventListener("click", () => {
+    if (isSubmitting) return;
+    closeConfirmation();
+  });
+}
 
-  setStatus("Enviando...", "pending");
-
-  try {
-    const response = await fetch(GAS_ENDPOINT, {
-      method: "POST",
-      headers: {
-        "Content-Type": "text/plain;charset=utf-8",
-      },
-      body: JSON.stringify({
-        responsable,
-        items: payload.map(({ fecha, codigo, ingrediente, cantidad }) => ({
-          fecha,
-          codigo,
-          ingrediente,
-          cantidad,
-        })),
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+if (confirmOverlayEl) {
+  confirmOverlayEl.addEventListener("click", (event) => {
+    if (event.target === confirmOverlayEl && !isSubmitting) {
+      closeConfirmation();
     }
+  });
+}
 
-    const data = await response.json().catch(() => ({}));
-    if (data.status && data.status !== "ok") {
-      throw new Error(data.message || "No se pudo guardar");
-    }
-
-    setStatus(data.message || "Producción registrada.", "success");
-    form.reset();
-  } catch (error) {
-    console.error(error);
-    setStatus("No se pudo guardar. Revisa la conexión o el endpoint.", "error");
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && confirmOverlayEl && !confirmOverlayEl.hidden && !isSubmitting) {
+    closeConfirmation();
   }
 });
+
+if (confirmSubmitBtn) {
+  confirmSubmitBtn.addEventListener("click", async () => {
+    if (!pendingSubmission || !confirmCheckEl || !confirmCheckEl.checked || isSubmitting) {
+      return;
+    }
+
+    isSubmitting = true;
+    confirmSubmitBtn.disabled = true;
+    if (confirmCancelBtn) confirmCancelBtn.disabled = true;
+
+    try {
+      const data = await submitData(pendingSubmission);
+      closeConfirmation();
+      setStatus(data.message || "Producción registrada.", "success");
+      form.reset();
+    } catch (error) {
+      console.error(error);
+      setStatus("No se pudo guardar. Revisa la conexión o el endpoint.", "error");
+      if (confirmCheckEl) {
+        confirmSubmitBtn.disabled = !confirmCheckEl.checked;
+      }
+    } finally {
+      isSubmitting = false;
+      if (confirmCancelBtn) confirmCancelBtn.disabled = false;
+    }
+  });
+}
 
 (async () => {
   setStatus("Cargando ingredientes...", "pending");
