@@ -316,10 +316,13 @@ body {
   padding: 16px;
   background: color-mix(in srgb, var(--text) 55%, transparent);
   z-index: 999;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .modal__card {
   width: min(1120px, 96vw);
+  max-height: calc(100dvh - 32px);
   background: var(--panel);
   border: 1px solid var(--panel-border);
   border-radius: 22px;
@@ -327,6 +330,7 @@ body {
   box-shadow: var(--shadow);
   display: grid;
   gap: 0;
+  overflow-y: auto;
 }
 
 .modal__header {
@@ -459,6 +463,16 @@ body {
 }
 
 @media (max-width: 920px) {
+  .modal {
+    place-items: start center;
+    padding: 10px;
+  }
+
+  .modal__card {
+    width: min(1120px, 100%);
+    max-height: calc(100dvh - 20px);
+  }
+
   .table__head,
   .item-row {
     grid-template-columns: 1fr;
