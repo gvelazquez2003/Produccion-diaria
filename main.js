@@ -1,5 +1,5 @@
 const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbyNcOB0zx2J4z1oPKnnWRsfDx6bUvJf7VpUQRU7PfY0Epr3zz31pEcWYVm8aWWPzNAq/exec"; // despliegue Apps Script produccion diaria
-const MENU_LINK = "https://menu-almacen.vercel.app/"; // URL del menú principal
+const MENU_LINK = "https://menu-ten-sigma.vercel.app/"; // URL del menú principal
 
 const form = document.getElementById("production-form");
 const statusEl = document.getElementById("status");
