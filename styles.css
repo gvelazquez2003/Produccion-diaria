@@ -40,10 +40,11 @@ body {
 
 .hero {
   background:
-    radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.08), transparent 24%),
-    linear-gradient(135deg, #1a1512 0%, #000000 52%, #0d0a08 100%);
+    radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.16), transparent 24%),
+    radial-gradient(circle at 82% 0%, rgba(255, 255, 255, 0.08), transparent 28%),
+    linear-gradient(135deg, #d98234 0%, #c06e32 48%, #9e5528 100%);
   border-radius: 30px;
-  padding: 38px 42px;
+  padding: 26px 42px 34px;
   color: #f8f3e9;
   box-shadow: var(--shadow);
   display: grid;
@@ -62,6 +63,16 @@ body {
   height: 3px;
   background: linear-gradient(90deg, transparent, var(--accent), var(--accent-soft), var(--accent), transparent);
   opacity: 0.95;
+}
+
+.hero__logo {
+  width: 74px;
+  height: 74px;
+  object-fit: contain;
+  border-radius: 50%;
+  border: 2px solid rgba(248, 243, 233, 0.6);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 18px rgba(62, 42, 22, 0.16);
 }
 
 .hero__pill {
@@ -100,21 +111,6 @@ body {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
-}
-
-.hero__field {
-  display: grid;
-  gap: 6px;
-  min-width: 260px;
-  flex: 1 1 320px;
-}
-
-.hero__label {
-  font-size: 12px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  font-weight: 700;
-  color: rgba(248, 243, 233, 0.88);
 }
 
 .panel {
@@ -171,6 +167,20 @@ body {
 .form {
   display: grid;
   gap: 18px;
+}
+
+.form__lead-field {
+  display: grid;
+  gap: 8px;
+  max-width: 520px;
+}
+
+.form__label {
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--accent-strong);
 }
 
 .table {
@@ -596,6 +606,11 @@ body {
     width: 100%;
   }
 
+  .hero__logo {
+    width: 64px;
+    height: 64px;
+  }
+
   .btn,
   #add-row {
     width: 100%;
@@ -604,6 +619,10 @@ body {
 
   .code-pill {
     width: 100%;
+  }
+
+  .form__lead-field {
+    max-width: none;
   }
 
   .confirm-table {

@@ -9,6 +9,7 @@
 <body>
   <main class="page">
     <header class="hero">
+      <img class="hero__logo" src="logopandetata.png" alt="Pan de Tata">
       <div class="hero__pill">Operaciones · Producción</div>
       <h1>Bitácora de
         <span>producción diaria</span>
@@ -16,10 +17,6 @@
       <p>Captura la producción de ingredientes por fecha. El listado de ingredientes proviene de la hoja "COSTO MATERIA PRIMA" y se validan sus códigos antes de guardar.</p>
       <div class="hero__actions">
         <a id="menu-link" class="btn primary" href="https://menu-general.vercel.app/" target="_blank" rel="noreferrer">Volver al menú</a>
-        <div class="hero__field">
-          <label class="hero__label" for="responsable">Responsable</label>
-          <input id="responsable" name="responsable" class="input" type="text" placeholder="Nombre y apellido" autocomplete="name" required>
-        </div>
       </div>
     </header>
 
@@ -34,6 +31,11 @@
       </div>
 
       <form id="production-form" class="form" novalidate>
+        <div class="form__lead-field">
+          <label class="form__label" for="responsable">Responsable</label>
+          <input id="responsable" name="responsable" class="input" type="text" placeholder="Nombre y apellido" autocomplete="name" required>
+        </div>
+
         <div class="table">
           <div class="table__head">
             <span>Fecha</span>
