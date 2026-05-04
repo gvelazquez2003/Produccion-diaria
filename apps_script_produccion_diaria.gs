@@ -1,20 +1,27 @@
 // Web App para Produccion Diaria
 // - GET ?mode=ingredientes -> lista de codigos/nombres desde COSTO MATERIA PRIMA
-// - POST body { responsable: "...", items: [{ fecha: "YYYY-MM-DD", codigo, ingrediente, cantidad }] } -> agrega filas en PRODUCCION DIARIA
+// - GET ?mode=familias -> lista de familias desde hoja FAMILIA
+// - POST body { responsable: "...", items: [{ fecha: "YYYY-MM-DD", codigo, ingrediente, familia, cantidad }] } -> agrega filas en PRODUCCION DIARIA
 // Columnas destino:
 // A=FECHA, B=CODIGO, C=INGREDIENTE
 // D=UND PRINCIPAL (no se toca)
-// E=CANTIDAD PRODUCIDA
-// F=RESPONSABLE
+// E=FAMILIA
+// F=CANTIDAD PRODUCIDA
+// G=RESPONSABLE
 
 const SPREADSHEET_ID = "1MQlP9wx199xW-gIYwf4FcjdANG9TLEkSjORiNmxJH5s";
 const SOURCE_SHEET = "COSTO MATERIA PRIMA";
+const FAMILIA_SHEET = "FAMILIA";
 const TARGET_SHEET = "PRODUCCION DIARIA";
 
 function doGet(e) {
   const mode = (e && e.parameter && e.parameter.mode) || "";
   if (mode === "ingredientes") {
     const items = getIngredientes();
+    return json({ status: "ok", items });
+  }
+  if (mode === "familias") {
+    const items = getFamilias();
     return json({ status: "ok", items });
   }
   return json({ status: "ok", message: "Produccion Diaria" });
@@ -44,11 +51,13 @@ function doPost(e) {
     // mapa codigo -> articulo desde COSTO MATERIA PRIMA
     const sourceMap = buildSourceMap();
 
+    const familias = getFamilias();
     const rows = items.map((item, idx) => {
       const pos = idx + 1;
       const fecha = parseIsoDate(item.fecha, pos);
       const codigo = (item.codigo || "").trim();
       const ingrediente = (item.ingrediente || sourceMap[codigo] || "").trim();
+      const familia = (item.familia || "").trim();
       const cantidad = Number(item.cantidad);
 
       if (!codigo) {
@@ -57,11 +66,17 @@ function doPost(e) {
       if (!ingrediente) {
         throw new Error(`Ingrediente no encontrado en fila ${pos}`);
       }
+      if (!familia) {
+        throw new Error(`Familia requerida en fila ${pos}`);
+      }
+      if (familias.length && familias.indexOf(familia) === -1) {
+        throw new Error(`Familia invalida en fila ${pos}`);
+      }
       if (Number.isNaN(cantidad) || cantidad < 0) {
         throw new Error(`Cantidad invalida en fila ${pos}`);
       }
 
-      return { fecha, codigo, ingrediente, cantidad };
+      return { fecha, codigo, ingrediente, familia, cantidad };
     });
 
     const startRow = target.getLastRow() + 1;
@@ -71,11 +86,14 @@ function doPost(e) {
       .getRange(startRow, 1, rows.length, 3)
       .setValues(rows.map((r) => [r.fecha, r.codigo, r.ingrediente]));
 
-    // E: CANTIDAD PRODUCIDA
-    target.getRange(startRow, 5, rows.length, 1).setValues(rows.map((r) => [r.cantidad]));
+    // E: FAMILIA
+    target.getRange(startRow, 5, rows.length, 1).setValues(rows.map((r) => [r.familia]));
 
-    // F: RESPONSABLE
-    target.getRange(startRow, 6, rows.length, 1).setValues(rows.map(() => [responsable]));
+    // F: CANTIDAD PRODUCIDA
+    target.getRange(startRow, 6, rows.length, 1).setValues(rows.map((r) => [r.cantidad]));
+
+    // G: RESPONSABLE
+    target.getRange(startRow, 7, rows.length, 1).setValues(rows.map(() => [responsable]));
 
     return json({ status: "ok", message: `Se registraron ${rows.length} fila(s).` });
   } catch (err) {
@@ -131,6 +149,24 @@ function getIngredientes() {
       return true;
     })
     .sort((a, b) => a.code.localeCompare(b.code));
+}
+
+function getFamilias() {
+  const sheet = getSpreadsheet().getSheetByName(FAMILIA_SHEET);
+  if (!sheet) return [];
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return [];
+  const values = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+  const seen = {};
+  return values
+    .map((row) => (row[0] || "").toString().trim())
+    .filter((name) => name && name.toUpperCase() !== "FAMILIA")
+    .filter((name) => {
+      if (seen[name]) return false;
+      seen[name] = true;
+      return true;
+    })
+    .sort((a, b) => a.localeCompare(b));
 }
 
 function buildSourceMap() {

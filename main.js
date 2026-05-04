@@ -26,6 +26,7 @@ const setStatus = (message, type) => {
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
 let cachedOptions = [];
+let cachedFamilias = [];
 let pendingSubmission = null;
 let isSubmitting = false;
 
@@ -58,6 +59,24 @@ const renderDatalist = (options) => {
     .join("");
 };
 
+const renderFamiliaOptions = (selectEl) => {
+  if (!selectEl) return;
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "Selecciona";
+  placeholder.disabled = true;
+  placeholder.selected = true;
+  selectEl.innerHTML = "";
+  selectEl.appendChild(placeholder);
+
+  cachedFamilias.forEach((familia) => {
+    const opt = document.createElement("option");
+    opt.value = familia;
+    opt.textContent = familia;
+    selectEl.appendChild(opt);
+  });
+};
+
 const createRow = () => {
   const row = document.createElement("div");
   row.className = "item-row";
@@ -79,6 +98,21 @@ const createRow = () => {
   const codePill = document.createElement("div");
   codePill.className = "code-pill";
   codePill.textContent = "Código: —";
+
+  const selectFamilia = document.createElement("select");
+  selectFamilia.name = "familia";
+  selectFamilia.required = true;
+  selectFamilia.className = "select";
+  if (cachedFamilias.length) {
+    renderFamiliaOptions(selectFamilia);
+  } else {
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = "Cargando...";
+    opt.disabled = true;
+    opt.selected = true;
+    selectFamilia.appendChild(opt);
+  }
 
   const inputCantidad = document.createElement("input");
   inputCantidad.name = "cantidad";
@@ -107,7 +141,7 @@ const createRow = () => {
 
   inputIngrediente.addEventListener("input", updateCode);
 
-  row.append(inputFecha, inputIngrediente, codePill, inputCantidad, remove);
+  row.append(inputFecha, inputIngrediente, codePill, selectFamilia, inputCantidad, remove);
   return row;
 };
 
@@ -204,10 +238,12 @@ const validateFormData = () => {
     const row = rows[index];
     const fechaEl = row.querySelector('input[type="date"]');
     const ingredienteEl = row.querySelector('input[name="ingrediente"]');
+    const familiaEl = row.querySelector('select[name="familia"]');
     const cantidadEl = row.querySelector('input[name="cantidad"]');
 
     const fecha = (fechaEl && fechaEl.value ? fechaEl.value : "").trim();
     const ingredienteText = (ingredienteEl && ingredienteEl.value ? ingredienteEl.value : "").trim();
+    const familia = (familiaEl && familiaEl.value ? familiaEl.value : "").trim();
     const cantidadText = (cantidadEl && cantidadEl.value ? cantidadEl.value : "").trim();
     const cantidad = Number(cantidadText);
     const match = findMatch(ingredienteText);
@@ -230,6 +266,15 @@ const validateFormData = () => {
       };
     }
 
+    if (!familia) {
+      return {
+        ok: false,
+        message: `Fila ${index + 1}: la familia es obligatoria.`,
+        focusEl: familiaEl,
+        data: null,
+      };
+    }
+
     if (cantidadText === "" || Number.isNaN(cantidad) || cantidad < 0) {
       return {
         ok: false,
@@ -243,6 +288,7 @@ const validateFormData = () => {
       fecha,
       codigo: match.code,
       ingrediente: match.name,
+      familia,
       cantidad,
     });
   }
@@ -304,6 +350,20 @@ const getOptionsFromSheet = async () => {
   } catch (err) {
     console.error(err);
     setStatus("No se pudo cargar la lista de ingredientes.", "error");
+    return [];
+  }
+};
+
+const getFamiliasFromSheet = async () => {
+  try {
+    const res = await fetch(`${GAS_ENDPOINT}?mode=familias`);
+    if (!res.ok) throw new Error("No se pudo obtener familias.");
+    const data = await res.json();
+    if (!Array.isArray(data.items)) throw new Error("Respuesta inesperada.");
+    return data.items;
+  } catch (err) {
+    console.error(err);
+    setStatus("No se pudo cargar la lista de familias.", "error");
     return [];
   }
 };
@@ -387,7 +447,9 @@ if (confirmSubmitBtn) {
 
 (async () => {
   setStatus("Cargando ingredientes...", "pending");
-  cachedOptions = await getOptionsFromSheet();
+  const [ingredientes, familias] = await Promise.all([getOptionsFromSheet(), getFamiliasFromSheet()]);
+  cachedOptions = ingredientes;
+  cachedFamilias = familias;
   cachedOptions = cachedOptions.filter((opt) => {
     const code = (opt.code || "").trim();
     const name = (opt.name || "").trim();
@@ -398,6 +460,8 @@ if (confirmSubmitBtn) {
     return true;
   });
   renderDatalist(cachedOptions);
+  const familiaSelects = rowsContainer.querySelectorAll('select[name="familia"]');
+  familiaSelects.forEach((selectEl) => renderFamiliaOptions(selectEl));
   ensureRows(1);
   if (cachedOptions.length) {
     setStatus("Lista cargada. Puedes registrar.", "success");

@@ -159,7 +159,7 @@ body {
 .table__head,
 .item-row {
   display: grid;
-  grid-template-columns: 0.9fr 1.4fr 0.9fr 0.7fr 60px;
+  grid-template-columns: 0.9fr 1.4fr 0.9fr 0.9fr 0.7fr 60px;
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
