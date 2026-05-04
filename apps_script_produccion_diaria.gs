@@ -13,8 +13,9 @@ const SPREADSHEET_ID = "1MQlP9wx199xW-gIYwf4FcjdANG9TLEkSjORiNmxJH5s";
 const SOURCE_SHEET = "COSTO MATERIA PRIMA";
 const FAMILIA_SHEET = "FAMILIA";
 const TARGET_SHEET = "PRODUCCION DIARIA";
-const CATALOG_CACHE_KEY = "produccion_diaria_catalog_v2";
+const CATALOG_CACHE_KEY = "produccion_diaria_catalog_v3";
 const CATALOG_CACHE_TTL_SECONDS = 21600;
+const ALLOWED_FAMILIES = ["HOJALDRE", "PANADERIA"];
 
 function doGet(e) {
   const mode = (e && e.parameter && e.parameter.mode) || "";
@@ -157,18 +158,15 @@ function getCatalogData() {
 
   const sheet = getSpreadsheet().getSheetByName(SOURCE_SHEET);
   const ingredients = [];
-  const families = [];
   const seenCodes = {};
-  const seenFamilies = {};
 
   if (sheet) {
     const lastRow = sheet.getLastRow();
     if (lastRow >= 2) {
-      const values = sheet.getRange(2, 1, lastRow - 1, 4).getValues();
+      const values = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
       values.forEach((row) => {
         const code = (row[0] || "").toString().trim();
         const name = (row[1] || "").toString().trim();
-        const family = (row[3] || "").toString().trim();
 
         if (code && name) {
           const upperCode = code.toUpperCase();
@@ -178,28 +176,12 @@ function getCatalogData() {
             ingredients.push({ code: code, name: name });
           }
         }
-
-        if (family && family.toUpperCase() !== "FAMILIA" && !seenFamilies[family]) {
-          seenFamilies[family] = true;
-          families.push(family);
-        }
       });
     }
   }
 
   ingredients.sort((a, b) => a.code.localeCompare(b.code));
-  families.sort((a, b) => a.localeCompare(b));
-
-  if (!families.length) {
-    const fallback = getFamiliasDesdeHoja_();
-    fallback.forEach((family) => {
-      if (family && !seenFamilies[family]) {
-        seenFamilies[family] = true;
-        families.push(family);
-      }
-    });
-    families.sort((a, b) => a.localeCompare(b));
-  }
+  const families = getFamiliasDesdeHoja_();
 
   const sourceMap = ingredients.reduce((acc, item) => {
     acc[item.code] = item.name;
@@ -223,8 +205,8 @@ function getFamiliasDesdeHoja_() {
   const values = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
   const seen = {};
   return values
-    .map((row) => (row[0] || "").toString().trim())
-    .filter((name) => name && name.toUpperCase() !== "FAMILIA")
+    .map((row) => (row[0] || "").toString().trim().toUpperCase())
+    .filter((name) => ALLOWED_FAMILIES.indexOf(name) !== -1)
     .filter((name) => {
       if (seen[name]) return false;
       seen[name] = true;
