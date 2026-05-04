@@ -40,16 +40,16 @@ body {
 
 .hero {
   background:
-    radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.16), transparent 24%),
-    radial-gradient(circle at 82% 0%, rgba(255, 255, 255, 0.08), transparent 28%),
-    linear-gradient(135deg, #d98234 0%, #c06e32 48%, #9e5528 100%);
+    radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.75), transparent 24%),
+    radial-gradient(circle at 82% 0%, rgba(192, 110, 50, 0.08), transparent 28%),
+    linear-gradient(135deg, #fff7ea 0%, #f8f3e9 52%, #f1e5d3 100%);
   border-radius: 30px;
   padding: 26px 42px 34px;
-  color: #f8f3e9;
+  color: #000000;
   box-shadow: var(--shadow);
   display: grid;
   gap: 16px;
-  border: 1px solid rgba(192, 110, 50, 0.35);
+  border: 1px solid rgba(192, 110, 50, 0.28);
   position: relative;
   overflow: hidden;
 }
@@ -70,9 +70,9 @@ body {
   height: 74px;
   object-fit: contain;
   border-radius: 50%;
-  border: 2px solid rgba(248, 243, 233, 0.6);
-  background: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 8px 18px rgba(62, 42, 22, 0.16);
+  border: 2px solid rgba(192, 110, 50, 0.24);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 18px rgba(62, 42, 22, 0.12);
 }
 
 .hero__pill {
@@ -81,12 +81,13 @@ body {
   gap: 8px;
   padding: 10px 16px;
   border-radius: 999px;
-  background: rgba(248, 243, 233, 0.12);
-  border: 1px solid rgba(248, 243, 233, 0.22);
+  background: linear-gradient(180deg, #f6ead8 0%, #f0e3cf 100%);
+  border: 1px solid rgba(192, 110, 50, 0.22);
   font-size: 13px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   font-weight: 700;
+  color: #000000;
 }
 
 .hero h1 {
@@ -102,7 +103,7 @@ body {
 
 .hero p {
   margin: 0;
-  color: rgba(248, 243, 233, 0.92);
+  color: #000000;
   max-width: 720px;
   line-height: 1.6;
 }
@@ -320,14 +321,14 @@ body {
 }
 
 .btn.primary {
-  background: linear-gradient(180deg, #1a1512 0%, #000000 100%);
+  background: linear-gradient(180deg, #d98234 0%, #c06e32 54%, #9e5528 100%);
   color: #f8f3e9;
-  border-color: #000000;
+  border-color: rgba(192, 110, 50, 0.55);
 }
 
 .btn.primary:hover {
-  background: linear-gradient(180deg, var(--accent) 0%, var(--accent-strong) 100%);
-  border-color: var(--accent);
+  background: linear-gradient(180deg, #1a1512 0%, #000000 100%);
+  border-color: #000000;
   color: #f8f3e9;
   transform: translateY(-1px);
   box-shadow: 0 8px 20px rgba(62, 42, 22, 0.18);
