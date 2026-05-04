@@ -340,31 +340,20 @@ form.addEventListener("reset", () => {
   }, 0);
 });
 
-const getOptionsFromSheet = async () => {
+const getCatalogFromSheet = async () => {
   try {
-    const res = await fetch(`${GAS_ENDPOINT}?mode=ingredientes`);
-    if (!res.ok) throw new Error("No se pudo obtener la lista.");
+    const res = await fetch(`${GAS_ENDPOINT}?mode=catalogo`);
+    if (!res.ok) throw new Error("No se pudo obtener el catálogo.");
     const data = await res.json();
-    if (!Array.isArray(data.items)) throw new Error("Respuesta inesperada.");
-    return data.items;
+    if (!Array.isArray(data.items) || !Array.isArray(data.familias)) throw new Error("Respuesta inesperada.");
+    return {
+      ingredientes: data.items,
+      familias: data.familias,
+    };
   } catch (err) {
     console.error(err);
-    setStatus("No se pudo cargar la lista de ingredientes.", "error");
-    return [];
-  }
-};
-
-const getFamiliasFromSheet = async () => {
-  try {
-    const res = await fetch(`${GAS_ENDPOINT}?mode=familias`);
-    if (!res.ok) throw new Error("No se pudo obtener familias.");
-    const data = await res.json();
-    if (!Array.isArray(data.items)) throw new Error("Respuesta inesperada.");
-    return data.items;
-  } catch (err) {
-    console.error(err);
-    setStatus("No se pudo cargar la lista de familias.", "error");
-    return [];
+    setStatus("No se pudo cargar el catálogo.", "error");
+    return { ingredientes: [], familias: [] };
   }
 };
 
@@ -446,10 +435,10 @@ if (confirmSubmitBtn) {
 }
 
 (async () => {
-  setStatus("Cargando ingredientes...", "pending");
-  const [ingredientes, familias] = await Promise.all([getOptionsFromSheet(), getFamiliasFromSheet()]);
-  cachedOptions = ingredientes;
-  cachedFamilias = familias;
+  setStatus("Cargando catálogo...", "pending");
+  const catalog = await getCatalogFromSheet();
+  cachedOptions = catalog.ingredientes;
+  cachedFamilias = catalog.familias;
   cachedOptions = cachedOptions.filter((opt) => {
     const code = (opt.code || "").trim();
     const name = (opt.name || "").trim();
@@ -463,7 +452,7 @@ if (confirmSubmitBtn) {
   const familiaSelects = rowsContainer.querySelectorAll('select[name="familia"]');
   familiaSelects.forEach((selectEl) => renderFamiliaOptions(selectEl));
   ensureRows(1);
-  if (cachedOptions.length) {
+  if (cachedOptions.length || cachedFamilias.length) {
     setStatus("Lista cargada. Puedes registrar.", "success");
   }
 })();

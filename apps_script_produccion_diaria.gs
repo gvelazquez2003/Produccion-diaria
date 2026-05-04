@@ -13,15 +13,21 @@ const SPREADSHEET_ID = "1MQlP9wx199xW-gIYwf4FcjdANG9TLEkSjORiNmxJH5s";
 const SOURCE_SHEET = "COSTO MATERIA PRIMA";
 const FAMILIA_SHEET = "FAMILIA";
 const TARGET_SHEET = "PRODUCCION DIARIA";
+const CATALOG_CACHE_KEY = "produccion_diaria_catalog_v2";
+const CATALOG_CACHE_TTL_SECONDS = 21600;
 
 function doGet(e) {
   const mode = (e && e.parameter && e.parameter.mode) || "";
+  if (mode === "catalogo") {
+    const catalog = getCatalogData();
+    return json({ status: "ok", items: catalog.ingredients, familias: catalog.families });
+  }
   if (mode === "ingredientes") {
-    const items = getIngredientes();
+    const items = getCatalogData().ingredients;
     return json({ status: "ok", items });
   }
   if (mode === "familias") {
-    const items = getFamilias();
+    const items = getCatalogData().families;
     return json({ status: "ok", items });
   }
   return json({ status: "ok", message: "Produccion Diaria" });
@@ -48,10 +54,9 @@ function doPost(e) {
     const ss = getSpreadsheet();
     const target = ss.getSheetByName(TARGET_SHEET) || ss.insertSheet(TARGET_SHEET);
 
-    // mapa codigo -> articulo desde COSTO MATERIA PRIMA
-    const sourceMap = buildSourceMap();
-
-    const familias = getFamilias();
+    const catalog = getCatalogData();
+    const sourceMap = catalog.sourceMap;
+    const familias = catalog.families;
     const rows = items.map((item, idx) => {
       const pos = idx + 1;
       const fecha = parseIsoDate(item.fecha, pos);
@@ -126,32 +131,91 @@ function parseIsoDate(value, pos) {
 }
 
 function getIngredientes() {
-  const sheet = getSpreadsheet().getSheetByName(SOURCE_SHEET);
-  if (!sheet) return [];
-  const lastRow = sheet.getLastRow();
-  if (lastRow < 2) return [];
-  const values = sheet.getRange(2, 1, lastRow - 1, 2).getValues(); // col A codigo, col B articulo
-  const seen = {};
-  return values
-    .map((row) => ({
-      code: (row[0] || "").toString().trim(),
-      name: (row[1] || "").toString().trim(),
-    }))
-    .filter((r) => r.code && r.name)
-    .filter((r) => {
-      const upCode = r.code.toUpperCase();
-      const upName = r.name.toUpperCase();
-      return upCode !== "CODIGO" && upName !== "ARTICULO";
-    })
-    .filter((r) => {
-      if (seen[r.code]) return false;
-      seen[r.code] = true;
-      return true;
-    })
-    .sort((a, b) => a.code.localeCompare(b.code));
+  return getCatalogData().ingredients;
 }
 
 function getFamilias() {
+  return getCatalogData().families;
+}
+
+function buildSourceMap() {
+  return getCatalogData().sourceMap;
+}
+
+function getCatalogData() {
+  const cache = CacheService.getScriptCache();
+  const cached = cache.get(CATALOG_CACHE_KEY);
+  if (cached) {
+    try {
+      const parsed = JSON.parse(cached);
+      if (parsed && Array.isArray(parsed.ingredients) && Array.isArray(parsed.families)) {
+        return parsed;
+      }
+    } catch (error) {
+    }
+  }
+
+  const sheet = getSpreadsheet().getSheetByName(SOURCE_SHEET);
+  const ingredients = [];
+  const families = [];
+  const seenCodes = {};
+  const seenFamilies = {};
+
+  if (sheet) {
+    const lastRow = sheet.getLastRow();
+    if (lastRow >= 2) {
+      const values = sheet.getRange(2, 1, lastRow - 1, 4).getValues();
+      values.forEach((row) => {
+        const code = (row[0] || "").toString().trim();
+        const name = (row[1] || "").toString().trim();
+        const family = (row[3] || "").toString().trim();
+
+        if (code && name) {
+          const upperCode = code.toUpperCase();
+          const upperName = name.toUpperCase();
+          if (upperCode !== "CODIGO" && upperName !== "ARTICULO" && !seenCodes[code]) {
+            seenCodes[code] = true;
+            ingredients.push({ code: code, name: name });
+          }
+        }
+
+        if (family && family.toUpperCase() !== "FAMILIA" && !seenFamilies[family]) {
+          seenFamilies[family] = true;
+          families.push(family);
+        }
+      });
+    }
+  }
+
+  ingredients.sort((a, b) => a.code.localeCompare(b.code));
+  families.sort((a, b) => a.localeCompare(b));
+
+  if (!families.length) {
+    const fallback = getFamiliasDesdeHoja_();
+    fallback.forEach((family) => {
+      if (family && !seenFamilies[family]) {
+        seenFamilies[family] = true;
+        families.push(family);
+      }
+    });
+    families.sort((a, b) => a.localeCompare(b));
+  }
+
+  const sourceMap = ingredients.reduce((acc, item) => {
+    acc[item.code] = item.name;
+    return acc;
+  }, {});
+
+  const payload = { ingredients, families, sourceMap };
+  try {
+    cache.put(CATALOG_CACHE_KEY, JSON.stringify(payload), CATALOG_CACHE_TTL_SECONDS);
+  } catch (error) {
+  }
+
+  return payload;
+}
+
+function getFamiliasDesdeHoja_() {
   const sheet = getSpreadsheet().getSheetByName(FAMILIA_SHEET);
   if (!sheet) return [];
   const lastRow = sheet.getLastRow();
@@ -167,14 +231,6 @@ function getFamilias() {
       return true;
     })
     .sort((a, b) => a.localeCompare(b));
-}
-
-function buildSourceMap() {
-  const list = getIngredientes();
-  return list.reduce((acc, item) => {
-    acc[item.code] = item.name;
-    return acc;
-  }, {});
 }
 
 function getSpreadsheet() {
