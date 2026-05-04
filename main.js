@@ -63,7 +63,8 @@ const renderFamiliaOptions = (selectEl) => {
   if (!selectEl) return;
   const placeholder = document.createElement("option");
   placeholder.value = "";
-  placeholder.textContent = "Opcional";
+  placeholder.textContent = "Selecciona";
+  placeholder.disabled = true;
   placeholder.selected = true;
   selectEl.innerHTML = "";
   selectEl.appendChild(placeholder);
@@ -100,6 +101,7 @@ const createRow = () => {
 
   const selectFamilia = document.createElement("select");
   selectFamilia.name = "familia";
+  selectFamilia.required = true;
   selectFamilia.className = "select";
   if (cachedFamilias.length) {
     renderFamiliaOptions(selectFamilia);
@@ -260,6 +262,15 @@ const validateFormData = () => {
         ok: false,
         message: `Fila ${index + 1}: el ingrediente/código debe existir en la lista.`,
         focusEl: ingredienteEl,
+        data: null,
+      };
+    }
+
+    if (!familia) {
+      return {
+        ok: false,
+        message: `Fila ${index + 1}: la familia es obligatoria.`,
+        focusEl: familiaEl,
         data: null,
       };
     }

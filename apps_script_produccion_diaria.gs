@@ -66,7 +66,10 @@ function doPost(e) {
       if (!ingrediente) {
         throw new Error(`Ingrediente no encontrado en fila ${pos}`);
       }
-      if (familia && familias.length && familias.indexOf(familia) === -1) {
+      if (!familia) {
+        throw new Error(`Familia requerida en fila ${pos}`);
+      }
+      if (familias.length && familias.indexOf(familia) === -1) {
         throw new Error(`Familia invalida en fila ${pos}`);
       }
       if (Number.isNaN(cantidad) || cantidad < 0) {
