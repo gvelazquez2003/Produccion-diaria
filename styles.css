@@ -114,6 +114,14 @@ body {
   flex-wrap: wrap;
 }
 
+#menu-link {
+  display: inline-flex;
+  align-self: flex-start;
+  width: fit-content;
+  padding: 10px 16px;
+  font-size: 14px;
+}
+
 .panel {
   background: linear-gradient(180deg, #ffffff 0%, var(--panel) 100%);
   border: 1px solid var(--panel-border);
@@ -616,6 +624,12 @@ body {
   #add-row {
     width: 100%;
     text-align: center;
+  }
+
+  #menu-link {
+    width: fit-content;
+    max-width: 100%;
+    align-self: flex-start;
   }
 
   .code-pill {
